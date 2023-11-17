@@ -17,20 +17,27 @@ import dns.rcode
 # assigned and the following line will need to be updated.
 NXNAME_RRTYPE = 65283
 
+# Compact Answer OK (CO) EDNS Header Flag
+EDNS_FLAG_CO = 0x4000
+
 # Resolver List. Note: to correctly determine Compact Denial of Existence
 # style NXDOMAIN, these need to be DNSSEC validating resolvers.
 RESOLVER_LIST = ['8.8.8.8', '1.1.1.1']
 
 
-def get_resolver(addresses=None, lifetime=5, payload=1420):
+def get_resolver(addresses=None, lifetime=5, payload=1420, coflag=False):
     """
     Return resolver object configured to use given list of addresses, and
     that sets DO=1, RD=1, AD=1, and EDNS payload for queries to the resolver.
     """
 
+    ednsflags = dns.flags.DO
+    if coflag:
+        ednsflags |= EDNS_FLAG_CO
+
     resolver = dns.resolver.Resolver()
     resolver.set_flags(dns.flags.RD | dns.flags.AD)
-    resolver.use_edns(edns=0, ednsflags=dns.flags.DO, payload=payload)
+    resolver.use_edns(edns=0, ednsflags=ednsflags, payload=payload)
     resolver.lifetime = lifetime
     if addresses is not None:
         resolver.nameservers = addresses
