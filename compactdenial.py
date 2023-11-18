@@ -63,6 +63,20 @@ def nsec_type_set(type_bitmaps):
     return type_set
 
 
+def nsec_windows(type_bitmaps):
+    """
+    Iterator that returns info about the next NSEC windowed bitmap.
+    Mainly used for debugging or diagnostics.
+    """
+    for (window, bitmap) in type_bitmaps:
+        bitnumbers = []
+        for i, _ in enumerate(bitmap):
+            for j in range(0, 8):
+                if bitmap[i] & (0x80 >> j):
+                    bitnumbers.append(i * 8 + j)
+        yield window, bitmap, bitnumbers
+
+
 def rcode(qname, qtype, resolver=None):
     """
     Return rcode for given DNS qname and qtype. If a compact denial

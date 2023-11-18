@@ -16,9 +16,30 @@ import os
 import sys
 import argparse
 import dns.rcode
-from compactdenial import get_resolver, rcode, response
+from compactdenial import get_resolver, rcode, response, nsec_windows
 
 RESOLVER_LIST = ['8.8.8.8', '1.1.1.1']
+
+
+def decode_nsec_bitmaps(msg):
+    """Decode NSEC record bitmaps"""
+    for rrset in msg.authority:
+        if  rrset.rdtype not in  [dns.rdatatype.NSEC, dns.rdatatype.NSEC3]:
+            continue
+        for rdata in rrset.to_rdataset():
+            print(rrset.name,
+                  rrset.ttl,
+                  dns.rdataclass.to_text(rrset.rdclass),
+                  dns.rdatatype.to_text(rrset.rdtype),
+                  rdata)
+            for (window, bitmap, bitnumbers) in nsec_windows(rdata.windows):
+                start_rr = 256 * window
+                print(f'  Window {window}, StartRR {start_rr}:')
+                print(f"    len={len(bitmap)} {bitmap}")
+                print(f"    Bits: {bitnumbers}")
+                rrtypes = [start_rr + x for x in bitnumbers]
+                print(f"    RRs : {rrtypes}")
+
 
 if __name__ == '__main__':
 
@@ -28,15 +49,20 @@ if __name__ == '__main__':
     parser.add_argument("qtype", help="DNS query type")
     parser.add_argument("--response", dest='response', action='store_true',
                         help="Print full response")
+    parser.add_argument("--nsecdebug", dest='nsecdebug', action='store_true',
+                        help="Decode NSEC records in response")
     parser.add_argument("--coflag", dest='coflag', action='store_true',
                         help="Send Compact Answers OK EDNS flag")
     ARGS = parser.parse_args()
 
     RESOLVER = get_resolver(addresses=RESOLVER_LIST, coflag=ARGS.coflag)
 
-    if ARGS.response:
+    if ARGS.response or ARGS.nsecdebug:
         MSG = response(ARGS.qname, ARGS.qtype, resolver=RESOLVER)
-        print(MSG)
+        if ARGS.nsecdebug:
+            decode_nsec_bitmaps(MSG)
+        else:
+            print(MSG)
         sys.exit(MSG.rcode())
 
     RC = rcode(ARGS.qname, ARGS.qtype, resolver=RESOLVER)
