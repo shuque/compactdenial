@@ -79,14 +79,9 @@ def rcode(qname, qtype, resolver=None):
     https://datatracker.ietf.org/doc/draft-ietf-dnsop-compact-denial-of-existence/
     """
 
-    if resolver is None:
-        resolver = get_resolver()
-
-    qname = dns.name.from_text(qname)
-    try:
-        msg = resolver.resolve(qname, qtype, raise_on_no_answer=False).response
-    except dns.resolver.NXDOMAIN:
-        return dns.rcode.NXDOMAIN
+    if not isinstance(qname, dns.name.Name):
+        qname = dns.name.from_text(qname)
+    msg = response(qname, qtype, resolver)
 
     if is_authenticated(msg) and (
             msg.rcode() == dns.rcode.NOERROR and not msg.answer):
@@ -100,3 +95,20 @@ def rcode(qname, qtype, resolver=None):
                     return dns.rcode.NXDOMAIN
                 return msg.rcode()
     return msg.rcode()
+
+
+def response(qname, qtype, resolver=None):
+    """
+    Return DNS response message for a given DNS qname and qtype.
+    """
+
+    if resolver is None:
+        resolver = get_resolver()
+
+    if not isinstance(qname, dns.name.Name):
+        qname = dns.name.from_text(qname)
+    try:
+        msg = resolver.resolve(qname, qtype, raise_on_no_answer=False).response
+    except dns.resolver.NXDOMAIN as error:
+        return error.response(qname)
+    return msg
