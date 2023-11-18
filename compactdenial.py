@@ -8,6 +8,7 @@ Author: Shumon Huque
 """
 
 import dns.resolver
+import dns.query
 import dns.name
 import dns.rdatatype
 import dns.rcode
@@ -23,6 +24,10 @@ EDNS_FLAG_CO = 0x4000
 # Resolver List. Note: to correctly determine Compact Denial of Existence
 # style NXDOMAIN, these need to be DNSSEC validating resolvers.
 RESOLVER_LIST = ['8.8.8.8', '1.1.1.1']
+
+# Other parameters
+DEFAULT_UDP_PAYLOAD = 1420
+DEFAULT_QUERY_TIMEOUT = 5
 
 
 def get_resolver(addresses=None, lifetime=5, payload=1420, coflag=False):
@@ -77,28 +82,25 @@ def nsec_windows(type_bitmaps):
         yield window, bitmap, bitnumbers
 
 
-def rcode(qname, qtype, resolver=None):
+def rcode(msg, qname):
     """
-    Return rcode for given DNS qname and qtype. If a compact denial
+    Return rcode for given DNS response message. If a compact denial
     style NOERROR response is detected, return NXDOMAIN. Otherwise
     return the actual rcode observed in the DNS reply message.
 
     A compact denial style NOERROR response is a NXDOMAIN response
-    disguised as a NOERROR/NODATA. It is identified by a DNSSEC
-    authenticated (AD=1) NOERROR response with an empty answer
-    section, and an authority section containing an NSEC record
-    matching the query name that contains in its type bitmaps field:
-    NSEC, RRSIG, and the NXNAME sentinel type. It is sufficent to
-    only check the presence of NXNAME.
+    disguised as a NOERROR/NODATA. It is identified by a NOERROR
+    response with an empty answer section, and an authority section
+    containing an NSEC record matching the query name that contains
+    in its type bitmaps field: NSEC, RRSIG, and the NXNAME sentinel type.
+    It is sufficent to only check for the presence of NXNAME.
     https://datatracker.ietf.org/doc/draft-ietf-dnsop-compact-denial-of-existence/
     """
 
     if not isinstance(qname, dns.name.Name):
         qname = dns.name.from_text(qname)
-    msg = response(qname, qtype, resolver)
 
-    if is_authenticated(msg) and (
-            msg.rcode() == dns.rcode.NOERROR and not msg.answer):
+    if (msg.rcode() == dns.rcode.NOERROR and not msg.answer):
         for rrset in msg.authority:
             if rrset.name != qname:
                 continue
@@ -111,9 +113,10 @@ def rcode(qname, qtype, resolver=None):
     return msg.rcode()
 
 
-def response(qname, qtype, resolver=None):
+def query_resolver(qname, qtype, resolver=None):
     """
-    Return DNS response message for a given DNS qname and qtype.
+    Queries a DNS resolver for a given DNS qname and qtype and returns
+    the response message.
     """
 
     if resolver is None:
@@ -125,4 +128,31 @@ def response(qname, qtype, resolver=None):
         msg = resolver.resolve(qname, qtype, raise_on_no_answer=False).response
     except dns.resolver.NXDOMAIN as error:
         return error.response(qname)
+    return msg
+
+
+def query_server(qname, qtype, server, coflag=False):
+    """
+    Queries a DNS server directly for a given DNS qname and qtype and returns
+    the response message. Uses UDP transport with fallback to TCP upon
+    truncation.
+    """
+
+    if not isinstance(qname, dns.name.Name):
+        qname = dns.name.from_text(qname)
+
+    ednsflags = dns.flags.DO
+    if coflag:
+        ednsflags |= EDNS_FLAG_CO
+
+    query = dns.message.make_query(qname,
+                                   qtype,
+                                   use_edns=True,
+                                   ednsflags=ednsflags,
+                                   want_dnssec=True,
+                                   payload=DEFAULT_UDP_PAYLOAD)
+    query.flags &= ~dns.flags.RD
+    msg, _ = dns.query.udp_with_fallback(query, server,
+                                         timeout=DEFAULT_QUERY_TIMEOUT,
+                                         ignore_unexpected=True)
     return msg
