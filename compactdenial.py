@@ -7,6 +7,10 @@ Library of functions to work with Compact Denial of Existence.
 Author: Shumon Huque
 """
 
+# Ensure version matches that in pyproject.toml
+__version__ = "0.0.1"
+
+
 import dns.resolver
 import dns.query
 import dns.name
