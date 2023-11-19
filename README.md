@@ -29,9 +29,14 @@ optional arguments:
   --coflag         Send Compact Answers OK EDNS flag
 ```
 
-### Example usage:
+### Example program usage:
 
-Print effective response code for a given DNS query:
+Print effective response code for a given DNS query. In this example,
+the response is a Compact Denial style NXDOMAIN disguised as a NOERROR.
+The program examines the NXNAME sentinel type in the response's NSEC
+record, deduces that the name doesn't actually exist, and returns
+NXDOMAIN.
+
 ```
 $ compactrcode.py nxdomain.cloudflare.net. A
 NXDOMAIN
@@ -62,4 +67,49 @@ $ echo $?
 3
 ```
 
-Shumon Huque
+### Library Functions in compactdenial.py
+
+```
+    get_resolver(addresses=None, lifetime=5, payload=1420, coflag=False)
+        Return resolver object configured to use given list of addresses, and
+        that sets DO=1, RD=1, AD=1, and EDNS payload for queries to the resolver.
+
+    is_authenticated(msg)
+        Does DNS message have Authenticated Data (AD) flag set?
+
+    nsec_type_set(type_bitmaps)
+        Return set of RR types present in given NSEC record's type bitmaps.
+
+    nsec_windows(type_bitmaps)
+        Iterator that returns info about the next NSEC windowed bitmap.
+        Mainly used for debugging or diagnostics.
+
+    query_resolver(qname, qtype, resolver=None)
+        Queries a DNS resolver for a given DNS qname and qtype and returns
+        the response message.
+
+    query_server(qname, qtype, server, coflag=False)
+        Queries a DNS server directly for a given DNS qname and qtype and returns
+        the response message. Uses UDP transport with fallback to TCP upon
+        truncation.
+
+    rcode(msg, qname)
+        Return rcode for given DNS response message. If a compact denial
+        style NOERROR response is detected, return NXDOMAIN. Otherwise
+        return the actual rcode observed in the DNS reply message.
+
+        A compact denial style NOERROR response is a NXDOMAIN response
+        disguised as a NOERROR/NODATA. It is identified by a NOERROR
+        response with an empty answer section, and an authority section
+        containing an NSEC record matching the query name that contains
+        in its type bitmaps field: NSEC, RRSIG, and the NXNAME sentinel type.
+        It is sufficent to only check for the presence of NXNAME.
+        https://datatracker.ietf.org/doc/draft-ietf-dnsop-compact-denial-of-existence/
+
+DATA
+    DEFAULT_QUERY_TIMEOUT = 5
+    DEFAULT_UDP_PAYLOAD = 1420
+    EDNS_FLAG_CO = 16384
+    NXNAME_RRTYPE = 65283
+    RESOLVER_LIST = ['8.8.8.8', '1.1.1.1']
+```
