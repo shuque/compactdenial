@@ -25,8 +25,7 @@ NXNAME_RRTYPE = 65283
 # Compact Answer OK (CO) EDNS Header Flag
 EDNS_FLAG_CO = 0x4000
 
-# Resolver List. Note: to correctly determine Compact Denial of Existence
-# style NXDOMAIN, these need to be DNSSEC validating resolvers.
+# Default resolver list
 RESOLVER_LIST = ['8.8.8.8', '1.1.1.1']
 
 # Other parameters

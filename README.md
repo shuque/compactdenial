@@ -13,20 +13,21 @@ A small testing script, called "compactrcode" is also included that uses the lib
 
 ```
 $ compactrcode.py -h
-usage: compactrcode.py [-h] [--response] [--server SERVER] [--nsecdebug]
-                       [--coflag]
+usage: compactrcode.py [-h] [--response] [--resolver RESOLVER]
+                       [--server SERVER] [--nsecdebug] [--coflag]
                        qname qtype
 
 positional arguments:
-  qname            DNS query name
-  qtype            DNS query type
+  qname                DNS query name
+  qtype                DNS query type
 
 optional arguments:
-  -h, --help       show this help message and exit
-  --response       Print full response
-  --server SERVER  Server IP address to send query to
-  --nsecdebug      Decode NSEC records in response
-  --coflag         Send Compact Answers OK EDNS flag
+  -h, --help           show this help message and exit
+  --response           Print full response
+  --resolver RESOLVER  Resolver IP address to send query to
+  --server SERVER      Server IP address to send query to
+  --nsecdebug          Decode NSEC records in response
+  --coflag             Send Compact Answers OK EDNS flag
 ```
 
 ### Example program usage:

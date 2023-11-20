@@ -47,7 +47,11 @@ def get_response(args):
     if args.server:
         return query_server(args.qname, args.qtype, args.server, coflag=args.coflag)
 
-    resolver = get_resolver(addresses=RESOLVER_LIST, coflag=args.coflag)
+    if args.resolver:
+        resolver_list = [args.resolver]
+    else:
+        resolver_list = RESOLVER_LIST
+    resolver = get_resolver(addresses=resolver_list, coflag=args.coflag)
     return query_resolver(args.qname, args.qtype, resolver=resolver)
 
 
@@ -59,6 +63,8 @@ if __name__ == '__main__':
     parser.add_argument("qtype", help="DNS query type")
     parser.add_argument("--response", dest='response', action='store_true',
                         help="Print full response")
+    parser.add_argument("--resolver", dest='resolver',
+                        help="Resolver IP address to send query to")
     parser.add_argument("--server", dest='server',
                         help="Server IP address to send query to")
     parser.add_argument("--nsecdebug", dest='nsecdebug', action='store_true',
