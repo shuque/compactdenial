@@ -7,8 +7,8 @@ Library of functions to work with Compact Denial of Existence.
 Author: Shumon Huque
 """
 
-# Ensure version matches that in pyproject.toml
-__version__ = "0.0.2"
+# When releasing new version, update git tag too.
+__version__ = "0.0.3"
 
 
 import dns.resolver
@@ -62,19 +62,17 @@ def nsec_type_set(type_bitmaps):
     Return set of RR types present in given NSEC record's type bitmaps.
     """
     type_set = set()
-    for (window, bitmap) in type_bitmaps:
-        for i, _ in enumerate(bitmap):
-            for j in range(0, 8):
-                if bitmap[i] & (0x80 >> j):
-                    rrtype = window * 256 + i * 8 + j
-                    type_set.add(rrtype)
+    for (window, _, bitnumbers) in nsec_windows(type_bitmaps):
+        for bitnumber in bitnumbers:
+            rrtype = window * 256 + bitnumber
+            type_set.add(rrtype)
     return type_set
 
 
 def nsec_windows(type_bitmaps):
     """
-    Iterator that returns info about the next NSEC windowed bitmap.
-    Mainly used for debugging or diagnostics.
+    Iterator that returns info about the next NSEC windowed bitmap:
+    Window#, bitmap field, and bit numbers that are set.
     """
     for (window, bitmap) in type_bitmaps:
         bitnumbers = []
