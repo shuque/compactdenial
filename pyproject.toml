@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "compactdenial"
-version = "0.0.2"
+dynamic = ["version"]
 dependencies = [
   "dnspython",
 ]
@@ -24,3 +24,6 @@ authors = [
 [project.urls]
 Homepage = "https://github.com/shuque/compactdenial"
 Issues = "https://github.com/shuque/compactdenial/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "compactdenial.__version__"}
