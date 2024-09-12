@@ -8,7 +8,7 @@ Author: Shumon Huque
 """
 
 # When releasing new version, update git tag too.
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 import dns.resolver
@@ -20,7 +20,7 @@ import dns.rcode
 # NXNAME pseudo type code point (ENT type has been retired).
 # After the RFC is published, an official RR type code value will be
 # assigned and the following line will need to be updated.
-NXNAME_RRTYPE = 65283
+NXNAME_RRTYPE = 128
 
 # Compact Answer OK (CO) EDNS Header Flag
 EDNS_FLAG_CO = 0x4000
